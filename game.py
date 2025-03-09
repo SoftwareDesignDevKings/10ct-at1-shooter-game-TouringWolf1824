@@ -4,6 +4,7 @@ import random
 import os
 
 import app
+import math
 from player import Player
 from enemy import Enemy
 
@@ -28,6 +29,8 @@ class Game:
         # TODO: Set up game state variables
         self.running = True
         self.game_over = False
+        
+        self.coins = []
 
         self.enemies = []
         self.enemy_spawn_timer = 0
@@ -45,6 +48,8 @@ class Game:
         self.player = Player(app.WIDTH // 2, app.HEIGHT // 2, self.assets)
         self.game_over = False
         self.enemies = []
+        self.enemy_spawn_timer = 0
+        self.enemies_per_spawn = 1
         
 
 
@@ -68,6 +73,9 @@ class Game:
             self.handle_events()
             if not self.game_over:
                 self.update()
+            
+
+                
 
             self.draw()
 
@@ -78,15 +86,50 @@ class Game:
         for event in pygame.event.get():            
             if event.type == pygame.QUIT:
                 self.running = False
+            elif event.type == pygame.KEYDOWN:
+                if self.game_over:
+                    if event.key == pygame.K_r:
+                        self.reset_game()
+                    elif event.key == pygame.K_ESCAPE:
+                        self.running = False
+                    else:
+                        if event.key == pygame.K_SPACE:
+                            nearest_enemy = self.find_nearest_enemy()
+                            if nearest_enemy:
+                                self.player.shoot_toward_enemy(nearest_enemy)
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:  # Left mouse button
+                    self.player.shoot_toward_mouse(event.pos)
 
+
+    def find_nearest_enemy(self):
+        if not self.enemies:
+            return None
+        nearest = None
+        min_dist = float('inf')
+        px, py = self.player.x, self.player.y
+        for enemy in self.enemies:
+            dist = math.sqrt((enemy.x - px)**2 + (enemy.y - py)**2)
+            if dist < min_dist:
+                min_dist = dist
+                nearest = enemy
+        return nearest
+    
     def update(self):
         self.player.handle_input()
         self.player.update()
 
         for enemy in self.enemies:
             enemy.update(self.player)
-
+    
+        self.check_player_enemy_collisions()
+        self.check_bullet_enemy_collisions()
         self.spawn_enemies()
+
+        if self.player.health <= 0:
+            self.game_over = True
+            return
+
 
     def draw(self):
         self.screen.blit(self.background, (0, 0))
@@ -96,6 +139,13 @@ class Game:
 
         for enemy in self.enemies:
             enemy.draw(self.screen)
+
+        hp = max(0, min(self.player.health, 5))
+        health_img = self.assets["health"][hp]
+        self.screen.blit(health_img, (10, 10))
+
+        if self.game_over:
+            self.draw_game_over_screen()
 
         pygame.display.flip()
 
@@ -122,3 +172,44 @@ class Game:
                 enemy_type = random.choice(list(self.assets["enemies"].keys()))
                 enemy = Enemy(x, y, enemy_type, self.assets["enemies"])
                 self.enemies.append(enemy)
+
+    def check_player_enemy_collisions(self):
+        collided = False
+        for enemy in self.enemies:
+            if enemy.rect.colliderect(self.player.rect):
+                collided = True
+                break
+    
+
+
+        if collided:
+            self.player.take_damage(1)
+            px, py = self.player.x, self.player.y
+            for enemy in self.enemies:
+                enemy.set_knockback(px, py, app.PUSHBACK_DISTANCE)
+
+
+    def check_bullet_enemy_collisions(self):
+        for bullet in self.player.bullets:
+            for enemy in self.enemies:
+                if bullet.rect.colliderect(enemy.rect):
+                    self.player.bullets.remove(bullet)
+                    self.enemies.remove(enemy)
+
+    def draw_game_over_screen(self):
+        # Dark overlay
+        overlay = pygame.Surface((app.WIDTH, app.HEIGHT), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 180))
+        self.screen.blit(overlay, (0, 0))
+
+        # Game Over text
+        game_over_surf = self.font_large.render("GAME OVER!", True, (255, 0, 0))
+        game_over_rect = game_over_surf.get_rect(center=(app.WIDTH // 2, app.HEIGHT // 2 - 50))
+        self.screen.blit(game_over_surf, game_over_rect)
+
+        # Prompt to restart or quit
+        prompt_surf = self.font_small.render("Press R to Play Again or ESC to Quit", True, (255, 255, 255))
+        prompt_rect = prompt_surf.get_rect(center=(app.WIDTH // 2, app.HEIGHT // 2 + 20))
+        self.screen.blit(prompt_surf, prompt_rect)
+
+
