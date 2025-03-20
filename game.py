@@ -7,6 +7,7 @@ import app
 import math
 from player import Player
 from enemy import Enemy
+from coin import Coin
 
 class Game:
     def __init__(self):
@@ -16,6 +17,7 @@ class Game:
         self.clock = pygame.time.Clock()
 
         self.assets = app.load_assets()
+        self.mana = 10
 
 
         font_path = os.path.join("assets", "PressStart2P.ttf")
@@ -32,10 +34,11 @@ class Game:
         
         self.coins = []
 
-        self.enemies = []
-        self.enemy_spawn_timer = 0
+        self.targeted = {}
+        self.hit = []
+        self.check_interval = 50
+
         self.enemy_spawn_interval = 60
-        self.enemies_per_spawn = 1
 
 
         self.reset_game()
@@ -49,8 +52,8 @@ class Game:
         self.game_over = False
         self.enemies = []
         self.enemy_spawn_timer = 0
-        self.enemies_per_spawn = 1
-        
+        self.enemies_per_spawn = 3
+        self.coins = []
 
 
     def create_random_background(self, width, height, floor_tiles):
@@ -92,14 +95,26 @@ class Game:
                         self.reset_game()
                     elif event.key == pygame.K_ESCAPE:
                         self.running = False
-                    else:
-                        if event.key == pygame.K_SPACE:
-                            nearest_enemy = self.find_nearest_enemy()
-                            if nearest_enemy:
-                                self.player.shoot_toward_enemy(nearest_enemy)
+            
+                if event.key == pygame.K_SPACE:
+                    nearest_enemy = self.find_nearest_enemy()
+                    if nearest_enemy:
+                        self.player.shoot_toward_enemy(nearest_enemy)
+                        
+                        self.mana = max(0, self.mana - 1)
+                        
+
+                    
+
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:  # Left mouse button
                     self.player.shoot_toward_mouse(event.pos)
+                    self.mana = max(0, self.mana - 1)
+                    print(self.mana)
+                elif event.button == 2: # Right mouse button/Double click.
+                    pass
+                
+
 
 
     def find_nearest_enemy(self):
@@ -109,10 +124,16 @@ class Game:
         min_dist = float('inf')
         px, py = self.player.x, self.player.y
         for enemy in self.enemies:
-            dist = math.sqrt((enemy.x - px)**2 + (enemy.y - py)**2)
-            if dist < min_dist:
-                min_dist = dist
-                nearest = enemy
+            if enemy not in self.targeted:
+                dist = math.sqrt((enemy.x - px)**2 + (enemy.y - py)**2)
+                if dist < min_dist:
+                    min_dist = dist
+                    nearest = enemy
+
+
+                    
+                    
+        self.targeted[nearest] = self.check_interval
         return nearest
     
     def update(self):
@@ -129,10 +150,19 @@ class Game:
         if self.player.health <= 0:
             self.game_over = True
             return
+        
+        for enemy in list(self.targeted):
+            self.targeted[enemy] -= 1
+            if self.targeted[enemy] <= 0:
+                if enemy in self.enemies:
+                    del self.targeted[enemy]
 
 
     def draw(self):
         self.screen.blit(self.background, (0, 0))
+
+        for coin in self.coins:
+            coin.draw(self.screen)
 
         if not self.game_over:
             self.player.draw(self.screen) 
@@ -188,13 +218,21 @@ class Game:
             for enemy in self.enemies:
                 enemy.set_knockback(px, py, app.PUSHBACK_DISTANCE)
 
-
     def check_bullet_enemy_collisions(self):
+
         for bullet in self.player.bullets:
             for enemy in self.enemies:
                 if bullet.rect.colliderect(enemy.rect):
-                    self.player.bullets.remove(bullet)
+                    try:
+                        self.player.bullets.remove(bullet)
+                    except ValueError:
+                        pass
+                    new_coin = Coin(enemy.x, enemy.y)
+                    self.coins.append(new_coin)
                     self.enemies.remove(enemy)
+                    break
+
+
 
     def draw_game_over_screen(self):
         # Dark overlay
@@ -213,3 +251,62 @@ class Game:
         self.screen.blit(prompt_surf, prompt_rect)
 
 
+class Fireball:
+    def __init__(self, start_x, start_y, target_x, target_y,):
+        
+        self.x = start_x
+        self.y = start_y
+        self.target_x = target_x
+        self.target_y = target_y
+        self.speed = 10
+        self.radius = 10
+        self.Fireball_count = 1
+        
+        self.image = pygame.Surface((self.radius * 2, self.radius * 2)), pygame.SRCALPHA
+        pygame.draw.circle(self.image, (255, 0, 0), (self.radius, self.radius), self.radius)
+        
+
+        Fdx = self.target_x - self.x
+        Fdy = self.target_y - self.y
+        dist = math.sqrt(Fdx**2 + Fdy**2)
+        if dist == 0:
+            return
+
+        Fvx = (Fdx / dist) * self.speed
+        Fvy = (Fdy / dist) * self.speed
+
+        angle_spread = 10
+        base_angle = math.atan2(Fvy, Fvx)
+        Fmid = (self.Fireball_count - 1) / 2
+
+        for i in range(self.Fireball_count):
+            Foffset = i - Fmid
+            spread_radians = math.radians(angle_spread * Foffset)
+            Fire_angle = base_angle + spread_radians
+
+            Fire_final_vx = math.cos(Fire_angle) * self.speed
+            Fire_final_vy = math.sin(Fire_angle) * self.speed
+
+            FireBall = Fireball(self.x, self.y, Fire_final_vx, Fire_final_vy, self.radius)
+            self.FireBall_LIST.append(FireBall)
+        
+
+
+
+    def move_towards(self):
+
+        dx = self.target_x - self.x
+        dy = self.target_y - self.y
+        distance = math.hypot(dx, dy)  # Get the distance to the target
+
+        if distance != 0:
+            dx /= distance  # Normalize the direction vector
+            dy /= distance
+
+        # Move fireball in the direction of the mouse
+        self.x += dx * self.speed
+        self.y += dy * self.speed
+    
+    def draw(self, screen):
+
+        screen.blit(self.image, (self.x - self.radius, self.y - self.radius))

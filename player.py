@@ -8,6 +8,13 @@ class Player:
         self.x = x
         self.y = y
 
+
+        self.invincible = False  # Track if the player is invincible
+        self.invincible_time = 20  # Duration of invincibility in frames (1 second if 60 FPS)
+        self.invincible_timer = 0 
+
+
+
         self.speed = app.PLAYER_SPEED
         self.animations = assets["player"]
         self.state = "idle"
@@ -20,6 +27,8 @@ class Player:
         self.facing_left = False
 
         self.health = 5
+
+        self.FireBall_LIST = []
 
         self.bullet_speed = 10
         self.bullet_size = 10
@@ -65,14 +74,14 @@ class Player:
         keys = pygame.key.get_pressed()
         vel_x, vel_y = 0, 0
 
-        if keys[pygame.K_LEFT]:
+        if keys[pygame.K_a]:
             # Move character left
             vel_x -= self.speed
-        if keys[pygame.K_RIGHT]:
+        if keys[pygame.K_d]:
             vel_x += self.speed
-        if keys[pygame.K_UP]:
+        if keys[pygame.K_w]:
             vel_y -= self.speed
-        if keys[pygame.K_DOWN]:
+        if keys[pygame.K_s]:
             vel_y += self.speed
 
         self.x += vel_x
@@ -100,6 +109,10 @@ class Player:
 
     def update(self):
         self.update_animation()
+        if self.invincible == True:
+            self.invincible_timer -= 1
+            if self.invincible_timer <= 0:
+                self.invincible = False
 
     def update_animation(self):
         for bullet in self.bullets:
@@ -130,14 +143,19 @@ class Player:
             bullet.draw(surface)
 
     def take_damage(self, amount):
-
+        if self.invincible == True:
+            return
 
 
         self.health = max(0, self.health - amount)
+        self.invincible = True
+        self.invincible_timer = self.invincible_time 
 
     def shoot_toward_mouse(self, pos):
         mx, my = pos # m denotes mouse
         self.shoot_toward_position(mx, my)
+    
 
     def shoot_toward_enemy(self, enemy):
         self.shoot_toward_position(enemy.x, enemy.y)
+        
