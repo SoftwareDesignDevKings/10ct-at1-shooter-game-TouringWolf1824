@@ -8,6 +8,9 @@ import math
 from player import Player
 from enemy import Enemy
 from coin import Coin
+import state
+
+
 
 class Game:
     def __init__(self):
@@ -19,6 +22,7 @@ class Game:
         self.assets = app.load_assets()
         self.mana = 10
 
+        
 
         font_path = os.path.join("assets", "PressStart2P.ttf")
         self.font_small = pygame.font.Font(font_path, 18)
@@ -38,7 +42,7 @@ class Game:
         self.hit = []
         self.check_interval = 50
 
-        self.enemy_spawn_interval = 60
+        self.enemy_spawn_interval = 30
 
 
         self.reset_game()
@@ -102,7 +106,7 @@ class Game:
                         self.player.shoot_toward_enemy(nearest_enemy)
                         
                         self.mana = max(0, self.mana - 1)
-                        
+
 
                     
 
@@ -110,10 +114,14 @@ class Game:
                 if event.button == 1:  # Left mouse button
                     self.player.shoot_toward_mouse(event.pos)
                     self.mana = max(0, self.mana - 1)
-                    print(self.mana)
-                elif event.button == 2: # Right mouse button/Double click.
-                    pass
-                
+                    print('TEST TEST')
+            
+                elif event.button == 3:    
+                    self.player.shoot_toward_mouse(event.pos)
+                    self.mana = max(0, self.mana - 1)
+                    print('TESTING TESTINGA')
+
+
 
 
 
@@ -173,9 +181,12 @@ class Game:
         hp = max(0, min(self.player.health, 5))
         health_img = self.assets["health"][hp]
         self.screen.blit(health_img, (10, 10))
+        self.Fire_img = self.assets["Fire"]
 
         if self.game_over:
             self.draw_game_over_screen()
+
+
 
         pygame.display.flip()
 
@@ -220,11 +231,11 @@ class Game:
 
     def check_bullet_enemy_collisions(self):
 
-        for bullet in self.player.bullets:
+        for bullet in self.player.projectiles:
             for enemy in self.enemies:
                 if bullet.rect.colliderect(enemy.rect):
                     try:
-                        self.player.bullets.remove(bullet)
+                        self.player.projectiles.remove(bullet)
                     except ValueError:
                         pass
                     new_coin = Coin(enemy.x, enemy.y)
@@ -250,63 +261,3 @@ class Game:
         prompt_rect = prompt_surf.get_rect(center=(app.WIDTH // 2, app.HEIGHT // 2 + 20))
         self.screen.blit(prompt_surf, prompt_rect)
 
-
-class Fireball:
-    def __init__(self, start_x, start_y, target_x, target_y,):
-        
-        self.x = start_x
-        self.y = start_y
-        self.target_x = target_x
-        self.target_y = target_y
-        self.speed = 10
-        self.radius = 10
-        self.Fireball_count = 1
-        
-        self.image = pygame.Surface((self.radius * 2, self.radius * 2)), pygame.SRCALPHA
-        pygame.draw.circle(self.image, (255, 0, 0), (self.radius, self.radius), self.radius)
-        
-
-        Fdx = self.target_x - self.x
-        Fdy = self.target_y - self.y
-        dist = math.sqrt(Fdx**2 + Fdy**2)
-        if dist == 0:
-            return
-
-        Fvx = (Fdx / dist) * self.speed
-        Fvy = (Fdy / dist) * self.speed
-
-        angle_spread = 10
-        base_angle = math.atan2(Fvy, Fvx)
-        Fmid = (self.Fireball_count - 1) / 2
-
-        for i in range(self.Fireball_count):
-            Foffset = i - Fmid
-            spread_radians = math.radians(angle_spread * Foffset)
-            Fire_angle = base_angle + spread_radians
-
-            Fire_final_vx = math.cos(Fire_angle) * self.speed
-            Fire_final_vy = math.sin(Fire_angle) * self.speed
-
-            FireBall = Fireball(self.x, self.y, Fire_final_vx, Fire_final_vy, self.radius)
-            self.FireBall_LIST.append(FireBall)
-        
-
-
-
-    def move_towards(self):
-
-        dx = self.target_x - self.x
-        dy = self.target_y - self.y
-        distance = math.hypot(dx, dy)  # Get the distance to the target
-
-        if distance != 0:
-            dx /= distance  # Normalize the direction vector
-            dy /= distance
-
-        # Move fireball in the direction of the mouse
-        self.x += dx * self.speed
-        self.y += dy * self.speed
-    
-    def draw(self, screen):
-
-        screen.blit(self.image, (self.x - self.radius, self.y - self.radius))

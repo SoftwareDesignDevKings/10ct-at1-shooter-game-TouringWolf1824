@@ -77,6 +77,9 @@ def load_assets():
     # Health images
     assets["health"] = load_frames("health", 6, scale_factor=HEALTH_SCALE_FACTOR)
 
+    assets["Fire"] = load_frames("Fire", 4, scale_factor=HEALTH_SCALE_FACTOR)
+
+
     # Example coin image (uncomment if you have coin frames / images)
     # assets["coin"] = pygame.image.load(os.path.join("assets", "coin.png")).convert_alpha()
 

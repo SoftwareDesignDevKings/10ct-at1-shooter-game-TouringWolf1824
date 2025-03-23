@@ -2,6 +2,9 @@ import pygame
 import app  # Contains global settings like WIDTH, HEIGHT, PLAYER_SPEED, etc.
 import math
 from bullet import Bullet
+from bullet import Fireball
+import state
+
 
 class Player:
     def __init__(self, x, y, assets):
@@ -13,7 +16,7 @@ class Player:
         self.invincible_time = 20  # Duration of invincibility in frames (1 second if 60 FPS)
         self.invincible_timer = 0 
 
-
+        
 
         self.speed = app.PLAYER_SPEED
         self.animations = assets["player"]
@@ -22,20 +25,35 @@ class Player:
         self.animation_timer = 0
         self.animation_speed = 8
 
+        self.FIRE_frame_index = 0
+        self.FIRE_animation_timer = 0
+        self.FIRE_animation_speed = 8
+        self.FIRE_bullet_speed = 10
+        self.FIRE_bullet_size = 10
+        self.FIRE_bullet_count = 1
+        self.FIRE_shoot_cooldown = 20
+        self.FIRE_shoot_timer = 0
+
+
+
+
         self.image = self.animations[self.state][self.frame_index]
         self.rect = self.image.get_rect(center=(self.x, self.y))
         self.facing_left = False
 
         self.health = 5
 
-        self.FireBall_LIST = []
-
         self.bullet_speed = 10
         self.bullet_size = 10
         self.bullet_count = 1
         self.shoot_cooldown = 20
         self.shoot_timer = 0
-        self.bullets = []
+        
+        
+        
+        self.projectiles = []
+
+        
 
 
 
@@ -48,24 +66,40 @@ class Player:
         dist = math.sqrt(dx**2 + dy**2)
         if dist == 0:
             return
+        else:
 
-        vx = (dx / dist) * self.bullet_speed
-        vy = (dy / dist) * self.bullet_speed
+            if state.FireBall == True:
+                vx = (dx / dist) * self.FIRE_bullet_speed
+                vy = (dy / dist) * self.FIRE_bullet_speed
+            else:
+                vx = (dx / dist) * self.bullet_speed
+                vy = (dy / dist) * self.bullet_speed
 
-        angle_spread = 10
-        base_angle = math.atan2(vy, vx)
-        mid = (self.bullet_count - 1) / 2
+            angle_spread = 10
+            base_angle = math.atan2(vy, vx)
+            mid = (self.bullet_count - 1) / 2
 
-        for i in range(self.bullet_count):
-            offset = i - mid
-            spread_radians = math.radians(angle_spread * offset)
-            angle = base_angle + spread_radians
+            for i in range(self.bullet_count):
+                offset = i - mid
+                spread_radians = math.radians(angle_spread * offset)
+                angle = base_angle + spread_radians
 
-            final_vx = math.cos(angle) * self.bullet_speed
-            final_vy = math.sin(angle) * self.bullet_speed
+                if state.FireBall == True:
 
-            bullet = Bullet(self.x, self.y, final_vx, final_vy, self.bullet_size)
-            self.bullets.append(bullet)
+                    final_vx = math.cos(angle) * self.FIRE_bullet_speed
+                    final_vy = math.sin(angle) * self.FIRE_bullet_speed
+
+                    fireball = Fireball(self.x, self.y, final_vx, final_vy, self.bullet_size)
+                    self.projectiles.append(fireball)
+                else:  
+
+                    final_vx = math.cos(angle) * self.bullet_speed
+                    final_vy = math.sin(angle) * self.bullet_speed
+
+                    bullet = Bullet(self.x, self.y, final_vx, final_vy, self.bullet_size)
+                    self.projectiles.append(bullet)
+
+
         self.shoot_timer = 0
 
     def handle_input(self):
@@ -115,10 +149,10 @@ class Player:
                 self.invincible = False
 
     def update_animation(self):
-        for bullet in self.bullets:
+        for bullet in self.projectiles:
             bullet.update()
             if bullet.y < 0 or bullet.y > app.HEIGHT or bullet.x < 0 or bullet.x > app.WIDTH:
-                self.bullets.remove(bullet)
+                self.projectiles.remove(bullet)
 
         self.animation_timer += 1
         if self.animation_timer >= self.animation_speed:
@@ -139,7 +173,7 @@ class Player:
         else:
             surface.blit(self.image, self.rect)
 
-        for bullet in self.bullets:
+        for bullet in self.projectiles:
             bullet.draw(surface)
 
     def take_damage(self, amount):
