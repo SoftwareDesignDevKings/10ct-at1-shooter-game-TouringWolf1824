@@ -25,6 +25,9 @@ class Enemy:
         self.knockback_dx = 0
         self.knockback_dy = 0
 
+        self.max_health = 1.0
+        self.health = self.max_health
+
     def update(self, player):
 
         if self.knockback_dist_remaining > 0:
@@ -50,7 +53,7 @@ class Enemy:
         
         # Updates enemy position
         self.rect.center = (self.x, self.y)
-        pass
+        
 
     def apply_knockback(self):
         step = min(app.ENEMY_KNOCKBACK_SPEED, self.knockback_dist_remaining)
@@ -77,12 +80,34 @@ class Enemy:
             self.rect.center = center
         
 
+    def take_damage(self, amount):
+        self.health -= amount
+        return self.health <= 0 
+
     def draw(self, surface):
         if self.facing_left:
             flipped_image = pygame.transform.flip(self.image, True, False)
             surface.blit(flipped_image, self.rect)
         else:
             surface.blit(self.image, self.rect)
+
+
+        if self.health < self.max_health:
+            bar_width = 40
+            bar_height = 5
+            health_ratio = max(0, self.health / self.max_health)
+
+            barX = self.x - bar_width//2
+            barY = self.y - self.rect.height//2 - 10
+
+            pygame.draw.rect(surface, (255, 0, 0), (barX, barY, bar_width, bar_height,))
+
+            green_width = int(bar_width * health_ratio)
+            if green_width > 0:
+                pygame.draw.rect(surface, (0, 255, 0), (barX, barY, green_width, bar_height,))
+
+
+            pygame.draw.rect(surface, (0,0,0), (barX, barY, bar_width, bar_height,), 1) 
 
     def set_knockback(self, px, py, dist):
         dx = self.x - px

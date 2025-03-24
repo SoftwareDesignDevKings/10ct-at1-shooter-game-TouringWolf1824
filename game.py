@@ -8,6 +8,8 @@ import math
 from player import Player
 from enemy import Enemy
 from coin import Coin
+from bullet import Bullet
+from bullet import Fireball
 
 import state
 
@@ -61,6 +63,9 @@ class Game:
         self.enemy_spawn_timer = 0
         self.enemies_per_spawn = 3
         self.coins = []
+        self.xp = 0
+        self.lvl = 1
+        self.mana = 100
 
 
     def create_random_background(self, width, height, floor_tiles):
@@ -154,28 +159,48 @@ class Game:
         self.mana_clock += 1
         for enemy in self.enemies:
             enemy.update(self.player)
+
+        self.update_projectiles()
+
+        self.update_coins()
     
         self.check_player_enemy_collisions()
-        self.check_bullet_enemy_collisions()
+
         self.spawn_enemies()
 
         if self.player.health <= 0:
             self.game_over = True
             return
-        if self.mana >= 100:
-            pass
-        else:
-            if self.mana_clock >= 60:
-                self.mana += 1
-                self.mana_clock = 0
+        if self.mana <= 100 and self.mana_clock >= 60:
+            
+        
+            self.mana += 1
+            self.mana_clock = 0
+            
         for enemy in list(self.targeted):
             self.targeted[enemy] -= 1
             if self.targeted[enemy] <= 0:
                 if enemy in self.enemies:
                     del self.targeted[enemy]
-     #   for coin in self.coins:
-       #     coin.update(self.player)
 
+    def update_projectiles(self):
+        for projectile in list(self.player.projectiles):
+            if hasattr(projectile, 'aoe_active') and projectile.aoe_active:
+                
+                projectile.apply_aoe_damage(self.enemies)
+                if not projectile.update():
+                    self.player.projectiles.remove(projectile)
+
+            else:
+                is_alive = projectile.update()
+                if not is_alive:
+                    self.player.projectiles.remove(projectile)
+
+    def update_coins(self):
+        for coin in list(self.coins):
+            if coin.update(self.player):
+                self.coins.remove(coin)
+                self.xp += 1
 
     def draw(self):
         self.screen.blit(self.background, (0, 0))
@@ -195,6 +220,27 @@ class Game:
         self.Fire_img = self.assets["Fire"]
         mana_text = self.font_small.render(f"Mana: {self.mana}/100", True, (0, 100, 255))
         self.screen.blit(mana_text, (10, 50))
+        
+        # Draw mana bar visual
+        mana_bar_width = 200
+        mana_bar_height = 20
+        mana_bar_x = 10
+        mana_bar_y = 80
+        
+        # Background (empty)
+        pygame.draw.rect(self.screen, (50, 50, 100), (mana_bar_x, mana_bar_y, mana_bar_width, mana_bar_height))
+        
+        # Filled portion
+        filled_width = int((self.mana / 100) * mana_bar_width)
+        if filled_width > 0:
+            pygame.draw.rect(self.screen, (50, 50, 255), (mana_bar_x, mana_bar_y, filled_width, mana_bar_height))
+        
+        # Border
+        pygame.draw.rect(self.screen, (255, 255, 255), (mana_bar_x, mana_bar_y, mana_bar_width, mana_bar_height), 2)
+        
+        # Draw XP counter
+        xp_text = self.font_small.render(f"XP: {self.xp}", True, (255, 215, 0))
+        self.screen.blit(xp_text, (10, 110))
 
         if self.game_over:
             self.draw_game_over_screen()
@@ -244,18 +290,34 @@ class Game:
 
     def check_bullet_enemy_collisions(self):
 
-        for bullet in self.player.projectiles:
-            for enemy in self.enemies:
-                if bullet.rect.colliderect(enemy.rect):
-                    try:
-                        self.player.projectiles.remove(bullet)
-                    except ValueError:
-                        pass
-                    new_coin = Coin(enemy.x, enemy.y)
-                    self.coins.append(new_coin)
-                    self.enemies.remove(enemy)
-                    break
-       ####HERE PLS ####
+        for projectile in list(self.player.projectiles):
+            if hasattr(projectile, 'pixel_rect'):  # It's a fireball with a pixel
+                for enemy in list(self.enemies):
+                    if projectile.pixel_rect.colliderect(enemy.rect):
+                        # Trigger explosion at enemy position
+                        projectile.explode(enemy.x, enemy.y)
+                        
+                        # Only create coin if enemy dies
+                        if enemy.take_damage(1):
+                            new_coin = Coin(enemy.x, enemy.y)
+                            self.coins.append(new_coin)
+                            self.enemies.remove(enemy)
+                        break
+            else:  # Regular bullet
+                for enemy in list(self.enemies):
+                    if projectile.rect.colliderect(enemy.rect):
+                        try:
+                            self.player.projectiles.remove(projectile)
+                        except ValueError:
+                            pass
+                            
+                        # Check if enemy died from damage
+                        if enemy.take_damage(1):
+                            new_coin = Coin(enemy.x, enemy.y)
+                            self.coins.append(new_coin)
+                            self.enemies.remove(enemy)
+                        break
+   
 
 
 
@@ -269,6 +331,10 @@ class Game:
         game_over_surf = self.font_large.render("GAME OVER!", True, (255, 0, 0))
         game_over_rect = game_over_surf.get_rect(center=(app.WIDTH // 2, app.HEIGHT // 2 - 50))
         self.screen.blit(game_over_surf, game_over_rect)
+
+        score_surf = self.font_small.render(f"Final XP: {self.xp}", True, (255, 215, 0))
+        score_rect = score_surf.get_rect(center=(app.WIDTH // 2, app.HEIGHT // 2))
+        self.screen.blit(score_surf, score_rect)
 
         # Prompt to restart or quit
         prompt_surf = self.font_small.render("Press R to Play Again or ESC to Quit", True, (255, 255, 255))
