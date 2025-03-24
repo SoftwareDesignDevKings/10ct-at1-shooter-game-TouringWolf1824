@@ -24,6 +24,8 @@ class Game:
         self.mana = 100
 
         
+        self.mana_clock = 0
+
 
         font_path = os.path.join("assets", "PressStart2P.ttf")
         self.font_small = pygame.font.Font(font_path, 18)
@@ -43,7 +45,7 @@ class Game:
         self.hit = []
         self.check_interval = 50
 
-        self.enemy_spawn_interval = 10
+        self.enemy_spawn_interval = 100
 
 
         self.reset_game()
@@ -115,13 +117,13 @@ class Game:
                 if event.button == 1:  # Left mouse button
                     self.player.shoot_toward_mouse(event.pos)
                     self.mana = max(0, self.mana - 1)
-                    print('TEST TEST')
+
             
                 elif event.button == 3:    
                     state.FireBall = True
                     self.player.shoot_toward_mouse(event.pos)
                     self.mana = max(0, self.mana - 3)
-                    print('TESTING TESTINGA')
+
                     state.FireBall = False
 
 
@@ -149,7 +151,7 @@ class Game:
     def update(self):
         self.player.handle_input()
         self.player.update()
-
+        self.mana_clock += 1
         for enemy in self.enemies:
             enemy.update(self.player)
     
@@ -160,14 +162,19 @@ class Game:
         if self.player.health <= 0:
             self.game_over = True
             return
-        
+        if self.mana >= 100:
+            pass
+        else:
+            if self.mana_clock >= 60:
+                self.mana += 1
+                self.mana_clock = 0
         for enemy in list(self.targeted):
             self.targeted[enemy] -= 1
             if self.targeted[enemy] <= 0:
                 if enemy in self.enemies:
                     del self.targeted[enemy]
-        for coin in self.coins:
-            coin.update(self.player)
+     #   for coin in self.coins:
+       #     coin.update(self.player)
 
 
     def draw(self):
