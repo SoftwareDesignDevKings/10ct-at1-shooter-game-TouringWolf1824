@@ -77,10 +77,48 @@ def load_assets():
     # Health images
     assets["health"] = load_frames("health", 6, scale_factor=HEALTH_SCALE_FACTOR)
 
-    assets["Fire"] = load_frames("Fire", 4, scale_factor=HEALTH_SCALE_FACTOR)
+    assets["Fire"] = load_frames("Fire", 4, scale_factor=0.08)
+
+    assets["boom"] = load_sprite_sheet("Explosion.png", 32, 32, 1)
 
 
     # Example coin image (uncomment if you have coin frames / images)
     # assets["coin"] = pygame.image.load(os.path.join("assets", "coin.png")).convert_alpha()
 
     return assets
+
+def load_sprite_sheet(filename, frame_width, frame_height, scale_factor=1, folder="assets"):
+
+    path = os.path.join(folder, filename)
+    sheet = pygame.image.load(path).convert_alpha()
+    
+    # Calculate scaled dimensions
+    scaled_width = int(frame_width * scale_factor)
+    scaled_height = int(frame_height * scale_factor)
+    
+    # Get the dimensions of the sheet
+    sheet_width, sheet_height = sheet.get_width(), sheet.get_height()
+    
+    # Calculate number of frames
+    cols = sheet_width // frame_width
+    rows = sheet_height // frame_height
+    
+    frames = []
+    
+    # Extract each frame
+    for row in range(rows):
+        for col in range(cols):
+            # Location of the frame on the sprite sheet
+            x = col * frame_width
+            y = row * frame_height
+            
+            # Extract the frame
+            frame = sheet.subsurface(pygame.Rect(x, y, frame_width, frame_height))
+            
+            # Scale if needed
+            if scale_factor != 1:
+                frame = pygame.transform.scale(frame, (scaled_width, scaled_height))
+                
+            frames.append(frame)
+    
+    return frames

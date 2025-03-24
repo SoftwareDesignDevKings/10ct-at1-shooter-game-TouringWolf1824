@@ -8,6 +8,7 @@ import math
 from player import Player
 from enemy import Enemy
 from coin import Coin
+
 import state
 
 
@@ -20,7 +21,7 @@ class Game:
         self.clock = pygame.time.Clock()
 
         self.assets = app.load_assets()
-        self.mana = 10
+        self.mana = 100
 
         
 
@@ -42,7 +43,7 @@ class Game:
         self.hit = []
         self.check_interval = 50
 
-        self.enemy_spawn_interval = 30
+        self.enemy_spawn_interval = 10
 
 
         self.reset_game()
@@ -117,10 +118,11 @@ class Game:
                     print('TEST TEST')
             
                 elif event.button == 3:    
+                    state.FireBall = True
                     self.player.shoot_toward_mouse(event.pos)
-                    self.mana = max(0, self.mana - 1)
+                    self.mana = max(0, self.mana - 3)
                     print('TESTING TESTINGA')
-
+                    state.FireBall = False
 
 
 
@@ -164,6 +166,8 @@ class Game:
             if self.targeted[enemy] <= 0:
                 if enemy in self.enemies:
                     del self.targeted[enemy]
+        for coin in self.coins:
+            coin.update(self.player)
 
 
     def draw(self):
@@ -182,6 +186,8 @@ class Game:
         health_img = self.assets["health"][hp]
         self.screen.blit(health_img, (10, 10))
         self.Fire_img = self.assets["Fire"]
+        mana_text = self.font_small.render(f"Mana: {self.mana}/100", True, (0, 100, 255))
+        self.screen.blit(mana_text, (10, 50))
 
         if self.game_over:
             self.draw_game_over_screen()
@@ -242,6 +248,7 @@ class Game:
                     self.coins.append(new_coin)
                     self.enemies.remove(enemy)
                     break
+       ####HERE PLS ####
 
 
 

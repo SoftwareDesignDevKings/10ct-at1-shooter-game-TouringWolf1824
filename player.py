@@ -11,15 +11,17 @@ class Player:
         self.x = x
         self.y = y
 
-
-        self.invincible = False  # Track if the player is invincible
-        self.invincible_time = 20  # Duration of invincibility in frames (1 second if 60 FPS)
-        self.invincible_timer = 0 
-
-        
+        self.invincible = False
+        self.invincible_time = 20
+        self.invincible_timer = 0
 
         self.speed = app.PLAYER_SPEED
         self.animations = assets["player"]
+    
+    # Add fire animations to player animations for easy access
+        if "Fire" in assets:
+            self.animations["Fire"] = assets["Fire"]
+        
         self.state = "idle"
         self.frame_index = 0
         self.animation_timer = 0
@@ -28,13 +30,11 @@ class Player:
         self.FIRE_frame_index = 0
         self.FIRE_animation_timer = 0
         self.FIRE_animation_speed = 8
-        self.FIRE_bullet_speed = 10
-        self.FIRE_bullet_size = 10
+        self.FIRE_bullet_speed = 5
+        self.FIRE_bullet_size = 1  # Increased size for better visibility
         self.FIRE_bullet_count = 1
         self.FIRE_shoot_cooldown = 20
         self.FIRE_shoot_timer = 0
-
-
 
 
         self.image = self.animations[self.state][self.frame_index]
@@ -48,12 +48,8 @@ class Player:
         self.bullet_count = 1
         self.shoot_cooldown = 20
         self.shoot_timer = 0
-        
-        
-        
-        self.projectiles = []
 
-        
+        self.projectiles = []
 
 
 
@@ -89,8 +85,25 @@ class Player:
                     final_vx = math.cos(angle) * self.FIRE_bullet_speed
                     final_vy = math.sin(angle) * self.FIRE_bullet_speed
 
-                    fireball = Fireball(self.x, self.y, final_vx, final_vy, self.bullet_size)
-                    self.projectiles.append(fireball)
+                    fire_frames = None
+                    if "Fire" in self.animations:
+                        fire_frames = self.animations["Fire"]
+                    else:
+                        all_assets = app.load_assets()
+                        if "Fire" in all_assets:
+                            fire_frames = all_assets["Fire"]
+                
+                # Make sure fire_frames is not None before creating a Fireball
+                    if fire_frames:
+                        fireball = Fireball(self.x, self.y, final_vx, final_vy, self.FIRE_bullet_size, fire_frames)
+                        self.projectiles.append(fireball)
+                    else:
+                    # Fallback to regular bullet if fire frames not found
+                        print("Fire frames not found, using regular bullet instead")
+                        bullet = Bullet(self.x, self.y, final_vx, final_vy, self.bullet_size)
+                        self.projectiles.append(bullet)
+
+
                 else:  
 
                     final_vx = math.cos(angle) * self.bullet_speed
