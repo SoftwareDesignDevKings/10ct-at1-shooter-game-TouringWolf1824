@@ -113,7 +113,7 @@ class Player:
                     self.projectiles.append(bullet)
 
 
-        self.shoot_timer = 0
+        self.shoot_timer = self.shoot_cooldown
 
     def handle_input(self):
         """Check and respond to keyboard/mouse input."""
@@ -153,6 +153,8 @@ class Player:
         elif vel_x > 0:
             self.facing_left = False
         
+        if self.shoot_timer > 0:
+            self.shoot_timer -= 1
 
     def update(self):
         self.update_animation()
@@ -165,7 +167,8 @@ class Player:
         for bullet in self.projectiles:
             bullet.update()
             if bullet.y < 0 or bullet.y > app.HEIGHT or bullet.x < 0 or bullet.x > app.WIDTH:
-                self.projectiles.remove(bullet)
+                if hasattr(bullet, 'exploded') and not bullet.exploded:
+                    self.projectiles.remove(bullet)
 
         self.animation_timer += 1
         if self.animation_timer >= self.animation_speed:
@@ -180,11 +183,14 @@ class Player:
 
     def draw(self, surface):
   
-        if self.facing_left:
-            flipped_image = pygame.transform.flip(self.image, True, False)
-            surface.blit(flipped_image, self.rect)
+        if self.invincible and self.invincible_timer % 4 < 2:
+            pass
         else:
-            surface.blit(self.image, self.rect)
+            if self.facing_left:
+                flipped_image = pygame.transform.flip(self.image, True, False)
+                surface.blit(flipped_image, self.rect)
+            else:
+                surface.blit(self.image, self.rect)
 
         for bullet in self.projectiles:
             bullet.draw(surface)

@@ -36,4 +36,7 @@ class Coin:
     def draw(self, surface):
         surface.blit(self.image, self.rect)
 
+
+
+
     
