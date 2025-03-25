@@ -77,9 +77,14 @@ def load_assets():
     # Health images
     assets["health"] = load_frames("health", 6, scale_factor=HEALTH_SCALE_FACTOR)
 
+    #Fireball assets#
     assets["Fire"] = load_frames("Fire", 4, scale_factor=0.08)
 
-    assets["boom"] = load_sprite_sheet("Explosion.png", 32, 32, 1)
+    assets["boom"] = load_sprite_sheet("Explosion.png", 32, 32, 5)
+
+    #New player assets#
+
+    
 
 
     # Example coin image (uncomment if you have coin frames / images)

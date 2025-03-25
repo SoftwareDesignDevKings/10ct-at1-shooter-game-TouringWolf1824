@@ -25,7 +25,24 @@ class Game:
         self.assets = app.load_assets()
         self.mana = 100
 
+        self.is_aoe_active = False
+        self.aoe_surface = pygame.Surface((120, 120), pygame.SRCALPHA)
+        self.aoe_pos = None
+        self.aoe_radius = 60
+        self.aoe_opacity = 100  # Initial opacity
+        self.is_aoe_active = False
+        self.aoe_time = 0
+        self.aoe_timer = 300
+        self.wait_time = 0
+
+        self.active_explosions = []
+        self.active_aoe_effects = []
+
         
+        self.explosion_frames = self.assets['boom']
+        
+          
+            
         self.mana_clock = 0
 
 
@@ -42,6 +59,11 @@ class Game:
         self.game_over = False
         
         self.coins = []
+
+        
+        self.wait_time = 0
+        self.aoe_time = 0
+        self.aoe_timer = 300
 
         self.targeted = {}
         self.hit = []
@@ -160,10 +182,11 @@ class Game:
         for enemy in self.enemies:
             enemy.update(self.player)
 
-        self.update_projectiles()
+
 
         self.update_coins()
     
+        self.check_bullet_enemy_collisions()
         self.check_player_enemy_collisions()
 
         self.spawn_enemies()
@@ -182,19 +205,44 @@ class Game:
             if self.targeted[enemy] <= 0:
                 if enemy in self.enemies:
                     del self.targeted[enemy]
+        for enemy in self.enemies:
+            if enemy.health <= 0:
+                new_coin = Coin(enemy.x, enemy.y)
+                self.coins.append(new_coin)
+                self.enemies.remove(enemy)
 
-    def update_projectiles(self):
-        for projectile in list(self.player.projectiles):
-            if hasattr(projectile, 'aoe_active') and projectile.aoe_active:
+
+
+        for explosion in list(self.active_explosions):
+            explosion['frame_timer'] += 1
+            if explosion['frame_timer'] >= explosion['frame_delay']:
+                explosion['frame_timer'] = 0
+                explosion['current_frame'] += 1
                 
-                projectile.apply_aoe_damage(self.enemies)
-                if not projectile.update():
-                    self.player.projectiles.remove(projectile)
+                # Remove explosion if animation is complete
+                if explosion['current_frame'] >= len(explosion['frames']):
+                    self.active_explosions.remove(explosion)
 
-            else:
-                is_alive = projectile.update()
-                if not is_alive:
-                    self.player.projectiles.remove(projectile)
+        for aoe_effect in list(self.active_aoe_effects):
+            aoe_effect['time'] += 1
+
+            aoe_effect['opacity'] = max(0, 100 - (aoe_effect['time'] * 0.3)) 
+            
+            for enemy in list(self.enemies):
+                distance = math.dist((enemy.x, enemy.y), aoe_effect['pos'])
+                if distance <= aoe_effect['radius']:
+                    enemy.take_damage(0.01)
+                    
+            if aoe_effect['time'] >= aoe_effect['duration'] or aoe_effect['opactiy'] <= 0:
+                self.active_aoe_effects.remove(aoe_effect)
+        
+
+        
+       
+
+
+                
+            
 
     def update_coins(self):
         for coin in list(self.coins):
@@ -205,11 +253,13 @@ class Game:
     def draw(self):
         self.screen.blit(self.background, (0, 0))
 
+        if not self.game_over:
+            self.player.draw(self.screen)
+
         for coin in self.coins:
             coin.draw(self.screen)
 
-        if not self.game_over:
-            self.player.draw(self.screen) 
+        
 
         for enemy in self.enemies:
             enemy.draw(self.screen)
@@ -241,6 +291,29 @@ class Game:
         # Draw XP counter
         xp_text = self.font_small.render(f"XP: {self.xp}", True, (255, 215, 0))
         self.screen.blit(xp_text, (10, 110))
+
+        for aoe_effect in self.active_aoe_effects:
+            # Create a surface for each AOE effect
+            aoe_surface = pygame.Surface((aoe_effect['radius'] * 2, aoe_effect['radius'] * 2), pygame.SRCALPHA)
+            pygame.draw.circle(
+                aoe_surface, 
+                (255, 0, 0, aoe_effect['opacity']), 
+                (aoe_effect['radius'], aoe_effect['radius']), 
+                aoe_effect['radius']
+            )
+            
+            # Draw the AOE surface centered on the effect position
+            draw_pos = (
+                aoe_effect['pos'][0] - aoe_effect['radius'], 
+                aoe_effect['pos'][1] - aoe_effect['radius']
+            )
+            self.screen.blit(aoe_surface, draw_pos)
+
+        for explosion in self.active_explosions:
+            frame = explosion['frames'][explosion['current_frame']]
+            frame_rect = frame.get_rect(center=(explosion['x'], explosion['y']))
+            self.screen.blit(frame, frame_rect)
+
 
         if self.game_over:
             self.draw_game_over_screen()
@@ -287,22 +360,67 @@ class Game:
             px, py = self.player.x, self.player.y
             for enemy in self.enemies:
                 enemy.set_knockback(px, py, app.PUSHBACK_DISTANCE)
-
+                
     def check_bullet_enemy_collisions(self):
-
         for projectile in list(self.player.projectiles):
-            if hasattr(projectile, 'pixel_rect'):  # It's a fireball with a pixel
+            # Check if it's a Fireball and has a pixel_rect
+            if hasattr(projectile, 'pixel_rect'):
                 for enemy in list(self.enemies):
+                    # Use the tiny pixel rect for precise collision
                     if projectile.pixel_rect.colliderect(enemy.rect):
-                        # Trigger explosion at enemy position
-                        projectile.explode(enemy.x, enemy.y)
+                        try:
+                            self.player.projectiles.remove(projectile)
+                        except ValueError:
+                            pass
                         
-                        # Only create coin if enemy dies
-                        if enemy.take_damage(1):
-                            new_coin = Coin(enemy.x, enemy.y)
-                            self.coins.append(new_coin)
-                            self.enemies.remove(enemy)
-                        break
+                        enemy.take_damage(2)
+                        # AOE damage to nearby enemies
+                        death_pos = (enemy.x, enemy.y)
+                        
+                        # Find all enemies within AOE radius
+                        for nearby_enemy in list(self.enemies):
+                            if math.dist((nearby_enemy.x, nearby_enemy.y), death_pos) <= 100:
+                                nearby_enemy.take_damage(0.6)
+
+                        explosion_data = {
+                            'x': death_pos[0],
+                            'y': death_pos[1],
+                            'frames': self.explosion_frames,
+                            'current_frame': 0,
+                            'frame_timer': 0,
+                            'frame_delay': 4  # Adjust speed of animation
+                        }
+                        self.active_explosions.append(explosion_data)
+
+                        new_aoe_effect = {
+                            'pos': death_pos,
+                            'radius': 100,
+                            'time': 0,
+                            'duration': 300,
+                            'opactiy': 150
+                        }
+
+                        # Set up AOE circle
+                        self.active_aoe_effects.append(new_aoe_effect)
+
+                        
+
+                        # Handle active AOE circle
+                        if self.is_aoe_active:
+                            # Redraw surface with current opacity
+                            self.aoe_surface = pygame.Surface((120, 120), pygame.SRCALPHA)
+                            pygame.draw.circle(
+                                self.aoe_surface, 
+                                (255, 0, 0, self.aoe_opacity), 
+                                (60, 60), 
+                                60
+                            )
+                        
+                        
+                            
+
+ 
+
             else:  # Regular bullet
                 for enemy in list(self.enemies):
                     if projectile.rect.colliderect(enemy.rect):
@@ -310,14 +428,11 @@ class Game:
                             self.player.projectiles.remove(projectile)
                         except ValueError:
                             pass
-                            
-                        # Check if enemy died from damage
-                        if enemy.take_damage(1):
-                            new_coin = Coin(enemy.x, enemy.y)
-                            self.coins.append(new_coin)
-                            self.enemies.remove(enemy)
-                        break
-   
+                        
+                        enemy.take_damage(1)
+                
+
+
 
 
 

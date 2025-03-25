@@ -19,6 +19,7 @@ class Enemy:
         
         self.enemy_type = enemy_type
         self.facing_left = False
+        
 
 
         self.knockback_dist_remaining = 0

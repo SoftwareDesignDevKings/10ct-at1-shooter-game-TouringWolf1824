@@ -17,9 +17,9 @@ class Coin:
 
     def update(self, player):
         dx = player.x - self.x
-        dy = player.y = self.y
+        dy = player.y - self.y
         dist = math.sqrt(dx**2 + dy**2)
-        if dist < self.collect_range:
+        if dist < self.collect_distance:
             return True
         if dist < self.collect_range:
             

@@ -30,7 +30,7 @@ class Player:
         self.FIRE_frame_index = 0
         self.FIRE_animation_timer = 0
         self.FIRE_animation_speed = 8
-        self.FIRE_bullet_speed = 5
+        self.FIRE_bullet_speed = 2
         self.FIRE_bullet_size = 1  # Increased size for better visibility
         self.FIRE_bullet_count = 1
         self.FIRE_shoot_cooldown = 20
@@ -41,7 +41,7 @@ class Player:
         self.rect = self.image.get_rect(center=(self.x, self.y))
         self.facing_left = False
 
-        self.health = 5
+        self.health = 50
 
         self.bullet_speed = 10
         self.bullet_size = 10
@@ -54,8 +54,7 @@ class Player:
 
 
     def shoot_toward_position(self, tx, ty):
-        if self.shoot_timer >= self.shoot_cooldown:
-            return
+
 
         dx = tx - self.x
         dy = ty - self.y
@@ -80,37 +79,28 @@ class Player:
                 spread_radians = math.radians(angle_spread * offset)
                 angle = base_angle + spread_radians
 
-                if state.FireBall == True:
+            if state.FireBall == True:
 
-                    final_vx = math.cos(angle) * self.FIRE_bullet_speed
-                    final_vy = math.sin(angle) * self.FIRE_bullet_speed
+                final_vx = math.cos(angle) * self.FIRE_bullet_speed
+                final_vy = math.sin(angle) * self.FIRE_bullet_speed
 
-                    fire_frames = None
-                    if "Fire" in self.animations:
-                        fire_frames = self.animations["Fire"]
-                    else:
-                        all_assets = app.load_assets()
-                        if "Fire" in all_assets:
-                            fire_frames = all_assets["Fire"]
+
+                fire_frames = self.animations["Fire"]
+
                 
                 # Make sure fire_frames is not None before creating a Fireball
-                    if fire_frames:
-                        fireball = Fireball(self.x, self.y, final_vx, final_vy, self.FIRE_bullet_size, fire_frames)
-                        self.projectiles.append(fireball)
-                    else:
-                    # Fallback to regular bullet if fire frames not found
-                        print("Fire frames not found, using regular bullet instead")
-                        bullet = Bullet(self.x, self.y, final_vx, final_vy, self.bullet_size)
-                        self.projectiles.append(bullet)
+                fireball = Fireball(self.x, self.y, final_vx, final_vy, self.FIRE_bullet_size, fire_frames)
+                self.projectiles.append(fireball)
 
 
-                else:  
 
-                    final_vx = math.cos(angle) * self.bullet_speed
-                    final_vy = math.sin(angle) * self.bullet_speed
+            else:  
 
-                    bullet = Bullet(self.x, self.y, final_vx, final_vy, self.bullet_size)
-                    self.projectiles.append(bullet)
+                final_vx = math.cos(angle) * self.bullet_speed
+                final_vy = math.sin(angle) * self.bullet_speed
+
+                bullet = Bullet(self.x, self.y, final_vx, final_vy, self.bullet_size)
+                self.projectiles.append(bullet)
 
 
         self.shoot_timer = self.shoot_cooldown
@@ -157,6 +147,10 @@ class Player:
             self.shoot_timer -= 1
 
     def update(self):
+        
+        for projectile in self.projectiles:
+            projectile.update()
+
         self.update_animation()
         if self.invincible == True:
             self.invincible_timer -= 1
@@ -164,11 +158,7 @@ class Player:
                 self.invincible = False
 
     def update_animation(self):
-        for bullet in self.projectiles:
-            bullet.update()
-            if bullet.y < 0 or bullet.y > app.HEIGHT or bullet.x < 0 or bullet.x > app.WIDTH:
-                if hasattr(bullet, 'exploded') and not bullet.exploded:
-                    self.projectiles.remove(bullet)
+
 
         self.animation_timer += 1
         if self.animation_timer >= self.animation_speed:
