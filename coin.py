@@ -15,6 +15,7 @@ class Coin:
         
 
 
+
     def update(self, player):
         dx = player.x - self.x
         dy = player.y - self.y
@@ -32,6 +33,7 @@ class Coin:
                 self.rect.center = (self.x, self.y)
 
         return False
+
 
     def draw(self, surface):
         surface.blit(self.image, self.rect)

@@ -41,10 +41,12 @@ class Game:
         self.active_aoe_effects = []
 
         
+
         self.explosion_frames = self.assets['boom']
         
           
             
+
         self.mana_clock = 0
 
 
@@ -203,22 +205,36 @@ class Game:
         if self.player.health <= 0:
             self.game_over = True
             return
+
         if self.mana <= 100 and self.mana_clock >= 60:
             
         
             self.mana += 1
             self.mana_clock = 0
             
+
+        if self.mana >= 100:
+            pass
+        else:
+            if self.mana_clock >= 60:
+                self.mana += 1
+                self.mana_clock = 0
+
         for enemy in list(self.targeted):
             self.targeted[enemy] -= 1
             if self.targeted[enemy] <= 0:
                 if enemy in self.enemies:
                     del self.targeted[enemy]
+
         for enemy in self.enemies:
             if enemy.health <= 0:
                 new_coin = Coin(enemy.x, enemy.y)
                 self.coins.append(new_coin)
                 self.enemies.remove(enemy)
+                
+        for coin in self.coins:
+            coin.update(self.player)
+
 
 
 

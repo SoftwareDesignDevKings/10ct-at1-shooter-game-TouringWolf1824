@@ -49,7 +49,7 @@ class Player:
 
         self.health = 50
 
-        self.bullet_speed = 10
+        self.bullet_speed = 1
         self.bullet_size = 10
         self.bullet_count = 1
         self.shoot_cooldown = 20
