@@ -10,6 +10,8 @@ from enemy import Enemy
 from coin import Coin
 from bullet import Bullet
 from bullet import Fireball
+from bullet import Lightning
+from bullet import Rock
 
 import state
 
@@ -136,6 +138,13 @@ class Game:
                         self.player.shoot_toward_enemy(nearest_enemy)
                         
                         self.mana = max(0, self.mana - 1)
+                if event.key == pygame.K_q:
+                    if self.player.cast_lightning(self.enemies, pygame.mouse.get_pos()):
+                        self.mana -= 5
+
+                if event.key == pygame.K_r:
+                    pass
+                     
 
 
                     
@@ -235,11 +244,9 @@ class Game:
                     
             if aoe_effect['time'] >= aoe_effect['duration'] or aoe_effect['opactiy'] <= 0:
                 self.active_aoe_effects.remove(aoe_effect)
-        
+
 
         
-       
-
 
                 
             
@@ -416,10 +423,7 @@ class Game:
                                 60
                             )
                         
-                        
-                            
-
- 
+            
 
             else:  # Regular bullet
                 for enemy in list(self.enemies):

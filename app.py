@@ -6,8 +6,8 @@ import os
 #                               CONSTANTS
 # --------------------------------------------------------------------------
 
-WIDTH = 800
-HEIGHT = 600
+WIDTH = 1200
+HEIGHT = 900
 FPS = 60
 
 PLAYER_SPEED = 3
@@ -81,6 +81,8 @@ def load_assets():
     assets["Fire"] = load_frames("Fire", 4, scale_factor=0.08)
 
     assets["boom"] = load_sprite_sheet("Explosion.png", 32, 32, 5)
+
+    assets["rock"] = load_sprite_sheet("Asteroids.png", 64, 64, 1)
 
     #New player assets#
 

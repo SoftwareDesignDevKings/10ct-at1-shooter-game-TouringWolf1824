@@ -3,6 +3,8 @@ import app  # Contains global settings like WIDTH, HEIGHT, PLAYER_SPEED, etc.
 import math
 from bullet import Bullet
 from bullet import Fireball
+from bullet import Lightning
+from bullet import Rock
 import state
 
 
@@ -14,6 +16,10 @@ class Player:
         self.invincible = False
         self.invincible_time = 20
         self.invincible_timer = 0
+
+        self.lightning_abilities = []
+        self.lightning_cooldown = 300
+        self.lightning_timer = 0
 
         self.speed = app.PLAYER_SPEED
         self.animations = assets["player"]
@@ -157,6 +163,12 @@ class Player:
             if self.invincible_timer <= 0:
                 self.invincible = False
 
+        for lightning in list(self.lightning_abilities):
+            if lightning.update(self.x, self.y):
+                self.lightning_abilities.remove(lightning)
+        if self.lightning_timer > 0:
+            self.lightning_timer -= 1
+
     def update_animation(self):
 
 
@@ -185,6 +197,9 @@ class Player:
         for bullet in self.projectiles:
             bullet.draw(surface)
 
+        for lightning in self.lightning_abilities:
+            lightning.draw(surface)
+
     def take_damage(self, amount):
         if self.invincible == True:
             return
@@ -201,4 +216,24 @@ class Player:
 
     def shoot_toward_enemy(self, enemy):
         self.shoot_toward_position(enemy.x, enemy.y)
+
+    def cast_lightning(self, enemies, mouse_pos):
+        if self.lightning_timer <= 0 and enemies:
+            lightning = Lightning(self.x, self.y, enemies, mouse_pos)
+            self.lightning_abilities.append(lightning)
+            self.lightning_timer = self.lightning_cooldown
+            for enemy in lightning.chain_targets:
+                enemy.speed = 0
+
+     
+            
+
+    
+
         
+
+
+        
+        
+
+            
