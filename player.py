@@ -64,56 +64,53 @@ class Player: # player classes#
 
 
     def shoot_toward_position(self, tx, ty): #Shoot toward def#
-
         #Get pos#
         dx = tx - self.x
         dy = ty - self.y
         dist = math.sqrt(dx**2 + dy**2)
         if dist == 0: #if shooting on you, dont shoot#
             return
-        else:
-
-            if state.FireBall == True: #If shooting a fireball, use fireball vars#
-                vx = (dx / dist) * self.FIRE_bullet_speed
-                vy = (dy / dist) * self.FIRE_bullet_speed
-            else: #Else use bullet vars#
-                vx = (dx / dist) * self.bullet_speed
-                vy = (dy / dist) * self.bullet_speed
-            #calc angle for multiple bullet shootings#
-            angle_spread = 10
-            base_angle = math.atan2(vy, vx)
-            mid = (self.bullet_count - 1) / 2
-
-            for i in range(self.bullet_count):
-                offset = i - mid
-                spread_radians = math.radians(angle_spread * offset)
-                angle = base_angle + spread_radians
-        #Calc angle with fire ball speed#
+        
+        # Determine if we're shooting a fireball or a regular bullet
+        if state.FireBall == True: #If shooting a fireball, use fireball vars#
+            bullet_speed = self.FIRE_bullet_speed
+            bullet_size = self.FIRE_bullet_size
+            bullet_count = self.FIRE_bullet_count
+        else: #Else use bullet vars#
+            bullet_speed = self.bullet_speed
+            bullet_size = self.bullet_size
+            bullet_count = self.bullet_count
+        
+        # Calculate base velocity vector
+        vx = (dx / dist) * bullet_speed
+        vy = (dy / dist) * bullet_speed
+        
+        # Calculate spread for multiple bullets
+        angle_spread = 10  # degrees between each bullet
+        base_angle = math.atan2(vy, vx)
+        mid = (bullet_count - 1) / 2
+        
+        # Create each bullet with appropriate spread
+        for i in range(bullet_count):
+            offset = i - mid
+            spread_radians = math.radians(angle_spread * offset)
+            angle = base_angle + spread_radians
+            
+            # Calculate final velocity with spread
+            final_vx = math.cos(angle) * bullet_speed
+            final_vy = math.sin(angle) * bullet_speed
+            
+            # Create the appropriate projectile type
             if state.FireBall == True:
-
-                final_vx = math.cos(angle) * self.FIRE_bullet_speed
-                final_vy = math.sin(angle) * self.FIRE_bullet_speed
-
-
                 fire_frames = self.animations["Fire"]
-
-                
-                # Make sure fire_frames is not None before creating a Fireball
-                fireball = Fireball(self.x, self.y, final_vx, final_vy, self.FIRE_bullet_size, fire_frames)
+                fireball = Fireball(self.x, self.y, final_vx, final_vy, bullet_size, fire_frames)
                 self.projectiles.append(fireball)
-
-
-
-            else:  #Else use bullet vars#
-
-                final_vx = math.cos(angle) * self.bullet_speed
-                final_vy = math.sin(angle) * self.bullet_speed
-
-                bullet = Bullet(self.x, self.y, final_vx, final_vy, self.bullet_size)
+            else:
+                bullet = Bullet(self.x, self.y, final_vx, final_vy, bullet_size)
                 self.projectiles.append(bullet)
-
-
-        self.shoot_timer = self.shoot_cooldown #reset timer to prevent spam shooting#
+        
+        # Reset timer to prevent spam shooting
+        self.shoot_timer = self.shoot_cooldown
 
     def handle_input(self): #Handle movement inputs#
   
@@ -234,30 +231,7 @@ class Player: # player classes#
             
             return True #Return true to check if fired. prevent mana deduction when not being able to fire lightning#
         
-    def pick_random_upgrades(self, num):
-        possible_upgrades = [
-            {"name": "Bigger Bullet",  "desc": "Bullet size +5"},
-            {"name": "Faster Bullet",  "desc": "Bullet speed +2"},
-            {"name": "Extra Bullet",   "desc": "Fire additional bullet"},
-            {"name": "Shorter Cooldown", "desc": "Shoot more frequently"},
-            {"name": "Up Lightning chain", "desc": "Attack 1 more enemy in Lightning strike"},
-            {"name": "Faster Fireball", "desc": "Shoot Fireballs Faster"},       
-        ]
-        return random.sample(possible_upgrades, k=num)
-#all upgrades possible, and define what they do, such as speed increase #
-    def apply_upgrade(self, player, upgrade):
-        name = upgrade["name"]
-        if name == "Bigger Bullet":
-            player.bullet_size += 5
-        elif name == "Faster Bullet":
-            player.bullet_speed += 2
-        elif name == "Extra Bullet":
-            player.bullet_count += 1
-        elif name == "Shorter Cooldown":
-            player.shoot_cooldown = max(1, int(player.shoot_cooldown * 0.8))
-        elif name == "Up Lightning chain":
-            lighning.max_chains = max(1, int(lightning.max_chains + 20))
-        elif name == "Faster Fireball":
-            player.FIRE_bullet_speed = max(1, int(player.FIRE_bullet_speed + 2))
+
+
 
 

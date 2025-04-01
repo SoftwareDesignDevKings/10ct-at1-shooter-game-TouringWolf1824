@@ -25,7 +25,7 @@ class Enemy:
 
 
         self.knockback_dist_remaining = 0 #Knockback distnace it has left#
-        self.knockback_dx = 0 #NEED TO LEARN#
+        self.knockback_dx = 0 #used to calculate knockback amount#
         self.knockback_dy = 0
 
         self.max_health = 1.0 #How much HP each enemy has#
@@ -59,7 +59,7 @@ class Enemy:
         
 
     def apply_knockback(self): #Apply knockback function#
-        step = min(app.ENEMY_KNOCKBACK_SPEED, self.knockback_dist_remaining) #NEED TO LEARN#
+        step = min(app.ENEMY_KNOCKBACK_SPEED, self.knockback_dist_remaining) 
         self.knockback_dist_remaining -= step
 
         self.x += self.knockback_dx * step
@@ -113,7 +113,7 @@ class Enemy:
             pygame.draw.rect(surface, (0,0,0), (barX, barY, bar_width, bar_height,), 1)  #else remove bar#
 
     def set_knockback(self, px, py, dist): #set the knockback to use in other function#
-        dx = self.x - px #NEED TO LEARN#
+        dx = self.x - px 
         dy = self.y - py
         length = math.sqrt(dx*dx + dy*dy) 
         if length != 0:

@@ -217,7 +217,7 @@ class Game: #Create class for game to import into Main#
         self.check_player_enemy_collisions()
 
         self.spawn_enemies()
-        self.check_for_level_up
+        self.check_for_level_up()
         #check if player dead, if dead make game over#
         if self.player.health <= 0:
             self.game_over = True
@@ -358,11 +358,15 @@ class Game: #Create class for game to import into Main#
         #determine how much xp 
         next_level_xp = self.player.level * self.player.level * 5
         xp_to_next = max(0, next_level_xp - self.xp)
+        #draw xp till next level words on screen#
         xp_next_surf = self.font_small.render(f"Next Lvl XP: {xp_to_next}", True, (255, 255, 255))
-        self.screen.blit(xp_next_surf, (10, 100))
+        self.screen.blit(xp_next_surf, (10, 200))
 
         if self.game_over:
             self.draw_game_over_screen()
+
+        if self.in_level_up_menu:
+            self.draw_upgrade_menu()
 
         pygame.display.flip()
 
@@ -518,7 +522,7 @@ class Game: #Create class for game to import into Main#
 
     def check_for_level_up(self):
         xp_needed = self.player.level * self.player.level * 5
-        if self.player.xp >= xp_needed:
+        if self.xp >= xp_needed:
             # Leveled up
             self.player.level += 1
             self.in_level_up_menu = True
@@ -526,3 +530,29 @@ class Game: #Create class for game to import into Main#
 
             # Increase enemy spawns each time we level up
             self.enemies_per_spawn += 1
+    
+    def pick_random_upgrades(self, num):
+        possible_upgrades = [
+            {"name": "Bigger Bullet",  "desc": "Bullet size +5"},
+            {"name": "Faster Bullet",  "desc": "Bullet speed +2"},
+            {"name": "Extra Bullet",   "desc": "Fire additional bullet"},
+            {"name": "Shorter Cooldown", "desc": "Shoot more frequently"},
+
+            {"name": "Faster Fireball", "desc": "Shoot Fireballs Faster"},       
+        ]
+        return random.sample(possible_upgrades, k=num)
+    
+#all upgrades possible, and define what they do, such as speed increase #
+    def apply_upgrade(self, player, upgrade):
+        name = upgrade["name"]
+        if name == "Bigger Bullet":
+            player.bullet_size += 5
+        elif name == "Faster Bullet":
+            player.bullet_speed += 2
+        elif name == "Extra Bullet":
+            player.bullet_count += 1
+        elif name == "Shorter Cooldown":
+            player.shoot_cooldown = max(1, int(player.shoot_cooldown * 0.8))
+
+        elif name == "Faster Fireball":
+            player.FIRE_bullet_speed = max(1, int(player.FIRE_bullet_speed + 2))

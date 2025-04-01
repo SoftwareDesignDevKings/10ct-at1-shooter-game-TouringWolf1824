@@ -96,7 +96,7 @@ def load_assets():
 
     return assets
 
-def load_sprite_sheet(filename, frame_width, frame_height, scale_factor=1, folder="assets"):
+def load_sprite_sheet(filename, frame_width, frame_height, scale_factor=1, folder="assets"): #def to convert sprite sheets into frames.#
 
     path = os.path.join(folder, filename)
     sheet = pygame.image.load(path).convert_alpha()
