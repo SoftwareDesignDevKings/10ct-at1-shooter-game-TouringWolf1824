@@ -86,8 +86,6 @@ def load_assets():
 
     assets["rock"] = load_sprite_sheet("Asteroids.png", 64, 64, 1)
 
-    #New player assets#
-
     
 
 
