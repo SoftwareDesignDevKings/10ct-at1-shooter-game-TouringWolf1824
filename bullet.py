@@ -126,6 +126,7 @@ class Lightning: #denote lighting class and important vars in init def#
         
         points = [start]
         segments = 5 #Denotes how many segments a single line should be cut into#
+        
         for i in range(1, segments):
             # Interpolate between start and end
             x = start[0] + (end[0] - start[0]) * (i / segments)
